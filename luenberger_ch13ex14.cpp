@@ -37,21 +37,6 @@ public:
 	// default constructor
 	GeomBrownMotion() : Mu {1}, Sigma {0} {};
 
-	// copy constructor
-	GeomBrownMotion(GeomBrownMotion& G)
-	{
-		Mu = G.mu();
-		Sigma = G.sigma();
-	}
-
-	// copy assignment
-	GeomBrownMotion& operator=(const GeomBrownMotion& G)
-	{
-		Mu = G.mu();
-		Sigma = G.sigma();
-		return *this;
-	}
-
 	double mu() 	const	{ return Mu; };
 	double sigma()	const	{ return Sigma; };
 };
@@ -71,25 +56,6 @@ public:
 		if (s0>0 && y>0 && p>0) { S0=s0; Years=y; Periods=p; G=g; }
 		else throw runtime_error("Bad values for Prices");
 	};
-
-	// copy constructor
-	PricesParam(PricesParam& PP)
-	{
-		S0 = PP.s0();
-		Years = PP.years();
-		Periods = PP.periods();
-		G = PP.g();
-	}
-
-	// copy assignment
-	PricesParam& operator=(const PricesParam& PP)
-	{
-		S0 = PP.s0();
-		Years = PP.years();
-		Periods = PP.periods();
-		G = PP.g();
-		return *this;
-	}
 
 	double s0() const { return S0; };
 	unsigned long years() const { return Years; };
@@ -161,7 +127,8 @@ public:
 
 	double advance(double l_p, double m, double D, double s, double e)
 	{
-		l_p += (m*D + s*e*sqrt(D));
+		double nu {m - s*s/2};
+		l_p += (nu*D + s*e*sqrt(D));
 		return l_p;
 	};
 };
