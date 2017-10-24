@@ -25,12 +25,12 @@ using namespace std;
 class GeomBrownMotion {
 private:
 	double Mu;			// mean value parameter
-	double Sigma;			// variance parameter
+	double Sigma;		// variance parameter
 public:
 	// constructor
-	GeomBrownMotion(double m, double s)
+	GeomBrownMotion(double m, double s) : Mu {m}, Sigma {s}
 	{
-		if (m > 0 && s >= 0) { Mu = m; Sigma = s; }
+		if (m > 0 && s >= 0) ;
 		else throw runtime_error("Bad values for GeomBrownMotion");
 	}
 
@@ -44,16 +44,17 @@ public:
 
 class PricesParam {
 private:
-	double S0;			// starting price
+	double S0;				// starting price
 	unsigned long Years;
 	unsigned Periods;		// number of periods per year
 	GeomBrownMotion G;		// GBM parameters
 
 public:
 	// constructor (with some sanity checking)
-	PricesParam(double s0, unsigned long y, unsigned p, GeomBrownMotion g)
+	PricesParam(double s0, unsigned long y, unsigned p, GeomBrownMotion g) :
+		S0 {s0}, Years {y}, Periods {p}, G {g}
 	{
-		if (s0>0 && y>0 && p>0) { S0=s0; Years=y; Periods=p; G=g; }
+		if (s0>0 && y>0 && p>0) ;
 		else throw runtime_error("Bad values for Prices");
 	};
 
