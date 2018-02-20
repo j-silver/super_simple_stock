@@ -78,7 +78,7 @@ public:
 		prices (PP.years()*PP.periods()) {};
 
 	const pair<valarray<double>, valarray<double>> TS_seq() const
-		{ return {times, prices}; };
+		{ return {times, prices}; }
 
 	virtual double advance
 		(double l_p, double m, double D, double s, double e) = 0;
@@ -87,7 +87,9 @@ public:
 	{
 		const double* p = end(prices);
 		return *--p;
-	};
+	}
+	
+	virtual ~Prices() {};
 };
 
 
@@ -214,7 +216,8 @@ int main(int argc, char* argv[])
 	double years {Parameters["T"]};
 	double s0 {Parameters["S"]};
 	double periods {Parameters["p"]};
-	PricesParam pp(s0, years, periods, gbm);
+	PricesParam pp(s0, static_cast<unsigned long>(years),
+					static_cast<unsigned>(periods), gbm);
 
 	LinearPrices	LP(pp);
 	LogPrices	LogP(pp);
