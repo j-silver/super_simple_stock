@@ -175,11 +175,11 @@ map<string, double> scan_arguments(int narg, char* args[])
 	constexpr double	sigma {0.3};
 
 	// pattern for the flags
-	string T_string {R"(-T\s*\d+)"};	// accepts only ints
-	string S_string {R"(-S\s*\d+(\.\d+)?)"};
-	string p_string {R"(-p\s*\d+)"};	// accepts only ints
-	string mu_string {R"(-m\s*\d+(\.\d+)?)"};
-	string sigma_string {R"(-s\s*\d+(\.\d+)?)"};
+	string T_string {R"(-T\s*(\d+))"};	// accepts only ints
+	string S_string {R"(-S\s*(\d+(\.\d+)?))"};
+	string p_string {R"(-p\s*(\d+))"};	// accepts only ints
+	string mu_string {R"(-m\s*(\d+(\.\d+)?))"};
+	string sigma_string {R"(-s\s*(\d+(\.\d+)?))"};
 
 	vector<pair <string, double>> Matches {
 		{T_string, T}, {S_string, S}, {p_string, p},
@@ -189,7 +189,7 @@ map<string, double> scan_arguments(int narg, char* args[])
 	smatch m;
 	for (auto& pat : Matches) {
 		if (regex_search(arguments_line, m, regex(pat.first))) {
-			pat.second = stod(m[0].str().substr(2));
+			pat.second = stod(m[1]);
 		}
 	}
 
@@ -235,7 +235,7 @@ int main(int argc, char* argv[])
 	constexpr unsigned int number_of_tries {1000};
 	double tot_final_lin {0};
 	double tot_final_log {0};
-	for (unsigned n{0}; n<number_of_tries; ++n) {
+	for (unsigned n{0}; n < number_of_tries; ++n) {
 		LinearPrices LP(pp);
 		LogPrices  LogP(pp);
 		seed = time(nullptr);
