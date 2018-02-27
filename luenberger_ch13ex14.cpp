@@ -188,9 +188,8 @@ map<string, double> scan_arguments(int narg, char* args[])
 
 	smatch m;
 	for (auto& pat : Matches) {
-		if (regex_search(arguments_line, m, regex(pat.first))) {
+		if (regex_search(arguments_line, m, regex(pat.first)))
 			pat.second = stod(m[1]);
-		}
 	}
 
 	map<string, double> params;
