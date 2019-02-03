@@ -44,11 +44,5 @@ CTestTestfile.cmake
 *.app
 
 .idea/
-CMakeLists.txt
-ReadMe.html
-ReadMe.md
-Super_Simple_stock.cpp
-Super_Simple_stock.hpp
 cmake-build-debug/JPMorgan_Chase_test
 cmake-build-debug/JPMorgan_Chase_test.cbp
-tests.cpp
