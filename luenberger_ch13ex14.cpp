@@ -73,7 +73,7 @@ protected:
 
 public:
 	// constructor
-	Prices(PricesParam& ps) :
+	explicit Prices(PricesParam& ps) :
 		PP(ps), times (PP.years()*PP.periods()),
 		prices (PP.years()*PP.periods()) {};
 
@@ -88,8 +88,8 @@ public:
 		const double* p = end(prices);
 		return *--p;
 	}
-	
-	virtual ~Prices() {};
+
+	virtual ~Prices() = default;
 };
 
 
@@ -105,13 +105,13 @@ ostream& operator<<(ostream& os, const Prices& P)
 class LinearPrices : public Prices {
 public:
 	// constructor
-	LinearPrices(PricesParam PP) : Prices(PP)
+	explicit LinearPrices(PricesParam PP) : Prices(PP)
 	{
 		times[0] = 0;
 		prices[0] = PP.s0();
 	};
 
-	double advance(double l_p, double m, double D, double s, double e)
+	double advance(double l_p, double m, double D, double s, double e) final
 	{
 		l_p *= (1 + m*D + s*e*sqrt(D));
 		return l_p;
@@ -122,13 +122,13 @@ public:
 class LogPrices : public Prices {
 public:
 	// constructor
-	LogPrices(PricesParam PP) : Prices(PP)
+	explicit LogPrices(PricesParam PP) : Prices(PP)
 	{
 		times[0] = 0;
 		prices[0] = log(PP.s0());
 	};
 
-	double advance(double l_p, double m, double D, double s, double e)
+	double advance(double l_p, double m, double D, double s, double e) final
 	{
 		double nu {m - s*s/2};
 		l_p += (nu*D + s*e*sqrt(D));
@@ -147,7 +147,7 @@ void Prices::GeneratePrices(long seed)
 	double eps;
 
 	normal_distribution<> NormalDist;
-	default_random_engine dre(seed);
+	default_random_engine dre {seed};
 
 	auto t_it {begin(times)};
 	auto p_it {begin(prices)};
@@ -210,16 +210,16 @@ int main(int argc, char* argv[])
 
 	double mu {Parameters["mu"]};
 	double sigma {Parameters["sigma"]};
-	GeomBrownMotion gbm(mu, sigma);
+	GeomBrownMotion gbm {mu, sigma};
 
 	double years {Parameters["T"]};
 	double s0 {Parameters["S"]};
 	double periods {Parameters["p"]};
-	PricesParam pp(s0, static_cast<unsigned long>(years),
-					static_cast<unsigned>(periods), gbm);
+	PricesParam pp {s0, static_cast<unsigned long>(years),
+					static_cast<unsigned>(periods), gbm};
 
-	LinearPrices	LP(pp);
-	LogPrices	LogP(pp);
+	LinearPrices	LP {pp};
+	LogPrices	LogP {pp};
 
 	long seed {time(nullptr)};
 	LP.GeneratePrices(seed);
@@ -235,13 +235,13 @@ int main(int argc, char* argv[])
 	double tot_final_lin {0};
 	double tot_final_log {0};
 	for (unsigned n{0}; n < number_of_tries; ++n) {
-		LinearPrices LP(pp);
-		LogPrices  LogP(pp);
+		LinearPrices lp {pp};
+		LogPrices  logp {pp};
 		seed = time(nullptr);
-		LP.GeneratePrices(seed);
-		LogP.GeneratePrices(seed);
-		tot_final_lin += LP.FinalPrice();
-		tot_final_log += LogP.FinalPrice();
+		lp.GeneratePrices(seed);
+		logp.GeneratePrices(seed);
+		tot_final_lin += lp.FinalPrice();
+		tot_final_log += logp.FinalPrice();
 	}
 	cout << "Final Price Average: "
 		<< log(tot_final_lin/number_of_tries) << endl;
