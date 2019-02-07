@@ -74,8 +74,8 @@ protected:
 public:
 	// constructor
 	explicit Prices(PricesParam& ps) :
-		PP(ps), times (PP.years()*PP.periods()),
-		prices (PP.years()*PP.periods()) {};
+		PP {ps}, times {PP.years()*PP.periods()},
+		prices {PP.years()*PP.periods()} {};
 
 	const pair<valarray<double>, valarray<double>> TS_seq() const
 		{ return {times, prices}; }
