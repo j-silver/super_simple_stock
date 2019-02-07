@@ -46,3 +46,5 @@ CTestTestfile.cmake
 .idea/
 cmake-build-debug/JPMorgan_Chase_test
 cmake-build-debug/JPMorgan_Chase_test.cbp
+Super_Simple_stock.hpp~
+cmake-build-release/JPMorgan_Chase_test.cbp

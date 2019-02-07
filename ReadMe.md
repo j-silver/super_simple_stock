@@ -1,12 +1,8 @@
+**Test for an application to JP Morgan Chase** (which has never received a feedback... as it usually happens)
+
+
 * Requirements: Linux; a C++17 compiler.
 
-* To compiles the tests, using GNU Make, run:
-
-make tests
-
-* To use clang++ just pass it with
-
-make CXX=clang++ tests
 
 * Linux is necessary because entropy from /dev/random/ is used to initialize the random number generator. If not available, any seed provided to the mt19937_64 engine will do.
 
