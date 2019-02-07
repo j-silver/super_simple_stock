@@ -85,8 +85,7 @@ public:
 	virtual void GeneratePrices(long);
 	double FinalPrice() const
 	{
-		const double* p = end(prices);
-		return *--p;
+		return *prev(end(prices));
 	}
 
 	virtual ~Prices() = default;
