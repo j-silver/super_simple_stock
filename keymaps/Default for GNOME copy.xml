@@ -1,5 +1,0 @@
-<keymap version="1" name="Default for GNOME copy" parent="Default for GNOME">
-  <action id="Tool_External Tools_neovim">
-    <keyboard-shortcut first-keystroke="alt v" />
-  </action>
-</keymap>
