@@ -24,66 +24,66 @@ using namespace std;
 
 class GeomBrownMotion {
 private:
-	double Mu;			// mean value parameter
-	double Sigma;		// variance parameter
+	double mu;			// mean value parameter
+	double sigma;		// variance parameter
 public:
 	// constructor
-	GeomBrownMotion(double m, double s) : Mu {m}, Sigma {s}
+	GeomBrownMotion(double m, double s) : mu {m}, sigma {s}
 	{
 		if (m > 0 && s >= 0) ;
 		else throw runtime_error("Bad values for GeomBrownMotion");
 	}
 
 	// default constructor
-	GeomBrownMotion() : Mu {1}, Sigma {0} {};
+	GeomBrownMotion() : mu {1}, sigma {0} {};
 
-	double mu() 	const	{ return Mu; };
-	double sigma()	const	{ return Sigma; };
+	double get_mu() 	const	{ return mu; };
+	double get_sigma()	const	{ return sigma; };
 };
 
 
 class PricesParam {
 private:
-	double S0;				// starting price
-	unsigned long Years;
-	unsigned Periods;		// number of periods per year
-	GeomBrownMotion G;		// GBM parameters
+	double s0;				// starting price
+	unsigned long years;
+	unsigned periods;		// number of periods per year
+	GeomBrownMotion g;		// GBM parameters
 
 public:
 	// constructor (with some sanity checking)
 	PricesParam(double s0, unsigned long y, unsigned p, GeomBrownMotion g) :
-		S0 {s0}, Years {y}, Periods {p}, G {g}
+		s0 {s0}, years {y}, periods {p}, g {g}
 	{
 		if (s0>0 && y>0 && p>0) ;
 		else throw runtime_error("Bad values for Prices");
 	};
 
-	double s0() const { return S0; };
-	unsigned long years() const { return Years; };
-	unsigned periods() const { return Periods; };
-	const GeomBrownMotion& g() const { return G; };
+	double get_s0() const { return s0; };
+	unsigned long get_years() const { return years; };
+	unsigned get_periods() const { return periods; };
+	const GeomBrownMotion& get_g() const { return g; };
 };
 
 
 class Prices {
 protected:
-	PricesParam PP;
+	PricesParam pp;
 	valarray<double> times;
 	valarray<double> prices;
 
 public:
 	// constructor
 	explicit Prices(PricesParam& ps) :
-		PP {ps}, times (PP.years()*PP.periods()),
-		prices (PP.years()*PP.periods()) {};
+		pp {ps}, times (pp.get_years()*pp.get_periods()),
+		prices (pp.get_years()*pp.get_periods()) {};
 
 	const pair<valarray<double>, valarray<double>> TS_seq() const
 		{ return {times, prices}; }
 
 	virtual double advance
-		(double l_p, double m, double D, double s, double e) = 0;
-	virtual void GeneratePrices(long);
-	double FinalPrice() const
+		(double lP, double m, double d, double s, double e) = 0;
+	virtual void generate_prices(long);
+	double final_price() const
 	{
 		return *prev(end(prices));
 	}
@@ -107,7 +107,7 @@ public:
 	explicit LinearPrices(PricesParam PP) : Prices(PP)
 	{
 		times[0] = 0;
-		prices[0] = PP.s0();
+		prices[0] = PP.get_s0();
 	};
 
 	double advance(double l_p, double m, double D, double s, double e) final
@@ -121,50 +121,50 @@ public:
 class LogPrices : public Prices {
 public:
 	// constructor
-	explicit LogPrices(PricesParam PP) : Prices(PP)
+	explicit LogPrices(PricesParam pp) : Prices(pp)
 	{
 		times[0] = 0;
-		prices[0] = log(PP.s0());
+		prices[0] = log(pp.get_s0());
 	};
 
-	double advance(double l_p, double m, double D, double s, double e) final
+	double advance(double lP, double m, double d, double s, double e) final
 	{
 		double nu {m - s*s/2};
-		l_p += (nu*D + s*e*sqrt(D));
-		return l_p;
+		lP += (nu*d + s*e*sqrt(d));
+		return lP;
 	};
 };
 
 
-void Prices::GeneratePrices(long seed)
+void Prices::generate_prices(long seed)
 {
-	unsigned p {PP.periods()};
-	double DT {1.0/p};
-	unsigned long y {PP.years()};
-	double mu  {PP.g().mu()};
-	double sigma {PP.g().sigma()};
+	unsigned p {pp.get_periods()};
+	double dt {1.0/p};
+	unsigned long y {pp.get_years()};
+	double mu  {pp.get_g().get_mu()};
+	double sigma {pp.get_g().get_sigma()};
 	double eps;
 
-	normal_distribution<> NormalDist;
+	normal_distribution<> normalDist;
 	default_random_engine dre {seed};
 
-	auto t_it {begin(times)};
-	auto p_it {begin(prices)};
-	double latest_price {*p_it};
+	auto tIt {begin(times)};
+	auto pIt {begin(prices)};
+	double latestPrice {*pIt};
 	for (unsigned t{1}; t < y*p; ++t) {
-		eps = NormalDist(dre);
-		*++t_it = t*DT;
-		latest_price = advance(latest_price, mu, DT, sigma, eps);
-		*++p_it = latest_price;
+		eps = normalDist(dre);
+		*++tIt = t*dt;
+		latestPrice = advance(latestPrice, mu, dt, sigma, eps);
+		*++pIt = latestPrice;
 	}
 }
 
 
 map<string, double> scan_arguments(int narg, char* args[])
 {
-	string arguments_line;
+	string argumentsLine;
 	for (int i{1}; i<narg; ++i)
-		arguments_line += args[i];
+		argumentsLine += args[i];
 
 	// default values
 	constexpr double	T {1};
@@ -174,29 +174,29 @@ map<string, double> scan_arguments(int narg, char* args[])
 	constexpr double	sigma {0.3};
 
 	// pattern for the flags
-	string T_string {R"(-T\s*(\d+))"};	// accepts only ints
-	string S_string {R"(-S\s*(\d+(\.\d+)?))"};
-	string p_string {R"(-p\s*(\d+))"};	// accepts only ints
-	string mu_string {R"(-m\s*(\d+(\.\d+)?))"};
-	string sigma_string {R"(-s\s*(\d+(\.\d+)?))"};
+	string tString {R"(-T\s*(\d+))"};	// accepts only ints
+	string sString {R"(-S\s*(\d+(\.\d+)?))"};
+	string pString {R"(-p\s*(\d+))"};	// accepts only ints
+	string muString {R"(-m\s*(\d+(\.\d+)?))"};
+	string sigmaString {R"(-s\s*(\d+(\.\d+)?))"};
 
-	vector<pair <string, double>> Matches {
-		{T_string, T}, {S_string, S}, {p_string, p},
-		{mu_string, mu}, {sigma_string, sigma}
+	vector<pair <string, double>> matches {
+		{tString, T}, {sString, S}, {pString, p},
+		{muString, mu}, {sigmaString, sigma}
 	};
 
 	smatch m;
-	for (auto& pat : Matches) {
-		if (regex_search(arguments_line, m, regex(pat.first)))
+	for (auto& pat : matches) {
+		if (regex_search(argumentsLine, m, regex(pat.first)))
 			pat.second = stod(m[1]);
 	}
 
 	map<string, double> params;
-	params["T"] = {Matches[0].second};
-	params["S"] = {Matches[1].second};
-	params["p"] = {Matches[2].second};
-	params["mu"] = {Matches[3].second};
-	params["sigma"] = {Matches[4].second};
+	params["T"] = {matches[0].second};
+	params["S"] = {matches[1].second};
+	params["p"] = {matches[2].second};
+	params["mu"] = {matches[3].second};
+	params["sigma"] = {matches[4].second};
 
 	return params;
 }
@@ -205,15 +205,15 @@ map<string, double> scan_arguments(int narg, char* args[])
 
 int main(int argc, char* argv[])
 {
-	map<string, double> Parameters {scan_arguments(argc, argv)};
+	map<string, double> parameters {scan_arguments(argc, argv)};
 
-	double mu {Parameters["mu"]};
-	double sigma {Parameters["sigma"]};
+	double mu {parameters["mu"]};
+	double sigma {parameters["sigma"]};
 	GeomBrownMotion gbm {mu, sigma};
 
-	double years {Parameters["T"]};
-	double s0 {Parameters["S"]};
-	double periods {Parameters["p"]};
+	double years {parameters["T"]};
+	double s0 {parameters["S"]};
+	double periods {parameters["p"]};
 	PricesParam pp {s0, static_cast<unsigned long>(years),
 					static_cast<unsigned>(periods), gbm};
 
@@ -221,8 +221,8 @@ int main(int argc, char* argv[])
 	LogPrices	LogP {pp};
 
 	long seed {time(nullptr)};
-	LP.GeneratePrices(seed);
-	LogP.GeneratePrices(seed);
+	LP.generate_prices(seed);
+	LogP.generate_prices(seed);
 
 	ofstream ofs {"linprices"};
 	ofs << LP;
@@ -230,22 +230,22 @@ int main(int argc, char* argv[])
 	ofs.open("logprices");
 	ofs << LogP;
 
-	constexpr unsigned int number_of_tries {1000};
-	double tot_final_lin {0};
-	double tot_final_log {0};
-	for (unsigned n{0}; n < number_of_tries; ++n) {
+	constexpr unsigned int numberOfTries {1000};
+	double totFinalLin {0};
+	double totFinalLog {0};
+	for (unsigned n{0}; n < numberOfTries; ++n) {
 		LinearPrices lp {pp};
 		LogPrices  logp {pp};
 		seed = time(nullptr);
-		lp.GeneratePrices(seed);
-		logp.GeneratePrices(seed);
-		tot_final_lin += lp.FinalPrice();
-		tot_final_log += logp.FinalPrice();
+		lp.generate_prices(seed);
+		logp.generate_prices(seed);
+		totFinalLin += lp.final_price();
+		totFinalLog += logp.final_price();
 	}
 	cout << "Final Price Average: "
-		<< log(tot_final_lin/number_of_tries) << endl;
+		<< log(totFinalLin/numberOfTries) << endl;
 	cout << "Final LogPrice Aver: "
-		<< tot_final_log/number_of_tries << endl;
+		<< totFinalLog/numberOfTries << endl;
 
 	return 0;
 }
