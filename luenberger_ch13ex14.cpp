@@ -14,177 +14,52 @@
 //
 // =============================================================================
 
-#include <iostream>
-#include <fstream>
-#include <random>
-#include <valarray>
-#include <map>
-#include <regex>
-using namespace std;
-
-class GeomBrownMotion {
-private:
-	double mu;			// mean value parameter
-	double sigma;		// variance parameter
-public:
-	// constructor
-	GeomBrownMotion(double m, double s) : mu {m}, sigma {s}
-	{
-		if (m > 0 && s >= 0) ;
-		else throw runtime_error("Bad values for GeomBrownMotion");
-	}
-
-	// default constructor
-	GeomBrownMotion() : mu {1}, sigma {0} {};
-
-	double get_mu() 	const	{ return mu; };
-	double get_sigma()	const	{ return sigma; };
-};
+#include "luenberger_ch13ex14.h"
 
 
-class PricesParam {
-private:
-	double s0;				// starting price
-	unsigned long years;
-	unsigned periods;		// number of periods per year
-	GeomBrownMotion g;		// GBM parameters
+double linear_advance(double lP, double m, double d, double s, double e)
+{
+	lP *= (1 + m*d + s*e*sqrt(d));
+	return lP;
+}
 
-public:
-	// constructor (with some sanity checking)
-	PricesParam(double s0, unsigned long y, unsigned p, GeomBrownMotion g) :
+
+double logarithmic_advance(double lP, double m, double d, double s, double e)
+{
+	double nu {m - s*s/2};
+	lP += (nu*d + s*e*sqrt(d));
+	return lP;
+}
+
+
+
+GeomBrownMotion::GeomBrownMotion(double m, double s) : mu {m}, sigma {s}
+{
+	if (m > 0 && s >= 0) ;
+	else throw std::runtime_error("Bad values for GeomBrownMotion");
+}
+
+
+PricesParam::PricesParam(double s0, unsigned long y, unsigned p, GeomBrownMotion g) :
 		s0 {s0}, years {y}, periods {p}, g {g}
-	{
-		if (s0>0 && y>0 && p>0) ;
-		else throw runtime_error("Bad values for Prices");
-	};
-
-	double get_s0() const { return s0; };
-	unsigned long get_years() const { return years; };
-	unsigned get_periods() const { return periods; };
-	const GeomBrownMotion& get_g() const { return g; };
-};
+{
+	if (s0>0 && y>0 && p>0) ;
+	else throw std::runtime_error("Bad values for Prices");
+}
 
 
-class Prices {
-public:
-	virtual pair<valarray<double>, valarray<double>> ts_seq() const = 0;
-
-	virtual PricesParam const& get_params() const = 0;
-
-	virtual double advance
-		(double lP, double m, double d, double s, double e) = 0;
-
-protected:
-	virtual double* get_times_start() = 0;
-	virtual double* get_prices_start() = 0;
-
-public:
-	friend void generate_prices(Prices& pricesObj, unsigned long);
-
-	virtual double final_price() const = 0;
-
-	virtual ~Prices() = default;
-};
-
-
-ostream& operator<<(ostream& os, const Prices& p)
+std::ostream& operator<<(std::ostream& os, const Prices& p)
 {
 	for (unsigned i {0}; i< p.ts_seq().first.size(); ++i)
 		os << p.ts_seq().first[i] << "," << p.ts_seq().second[i]
-			<< endl;
+		   << '\n';
 	return os;
 }
 
 
-class LinearPrices : public Prices {
-	PricesParam pp;
-	valarray<double> times;
-	valarray<double> prices;
-public:
-	// constructor
-	explicit LinearPrices(PricesParam param) :
-		pp {param},
-		times (pp.get_years()*pp.get_periods()),
-		prices (pp.get_years()*pp.get_periods())
-	{
-		prices[0] = param.get_s0();
-	};
 
-	double advance(double lP, double m, double d, double s, double e) final
-	{
-		lP *= (1 + m*d + s*e*sqrt(d));
-		return lP;
-	};
-
-	pair<valarray<double>, valarray<double>> ts_seq() const override
-	{
-		return {times, prices};
-	}
-
-protected:
-	double* get_times_start() override { return &times[0]; }
-	double* get_prices_start() override { return &prices[0]; }
-
-public:
-	PricesParam const& get_params() const override
-	{
-		return pp;
-	}
-
-	double final_price() const override
-	{
-		return *prev(end(prices));
-	}
-
-};
-
-
-class LogPrices : public Prices {
-	PricesParam pp;
-	valarray<double> times;
-	valarray<double> prices;
-public:
-	// constructor
-	explicit LogPrices(PricesParam pp) :
-		pp {pp},
-		times (pp.get_years()*pp.get_periods()),
-		prices (pp.get_years()*pp.get_periods())
-	{
-		prices[0] = log(pp.get_s0());
-	};
-
-	double advance(double lP, double m, double d, double s, double e) final
-	{
-		double nu {m - s*s/2};
-		lP += (nu*d + s*e*sqrt(d));
-		return lP;
-	};
-
-protected:
-	double* get_times_start() override { return &times[0]; }
-	double* get_prices_start() override { return &prices[0]; }
-
-public:
-	pair<valarray<double>, valarray<double>> ts_seq() const override
-	{
-		return {times, prices};
-	}
-
-	PricesParam const& get_params() const override
-	{
-		return pp;
-	}
-
-	double final_price() const override
-	{
-		return *prev(end(prices));
-	}
-};
-
-
-void generate_prices(Prices& pricesObj, unsigned long seed)
+void Prices::generate_prices(unsigned long seed)
 {
-	auto pp {pricesObj.get_params()};
 	unsigned p {pp.get_periods()};
 	double dt {1.0/p};
 	unsigned long y {pp.get_years()};
@@ -192,24 +67,33 @@ void generate_prices(Prices& pricesObj, unsigned long seed)
 	double sigma {pp.get_g().get_sigma()};
 	double eps;
 
-	normal_distribution<> normalDist;
-	default_random_engine dre {seed};
+	std::normal_distribution<> normalDist;
+	std::default_random_engine dre {seed};
 
-	auto tIt {pricesObj.get_times_start()};
-	auto pIt {pricesObj.get_prices_start()};
+	auto tIt {&times[0]};
+	auto pIt {&prices[0]};
 	double latestPrice {*pIt};
 	for (unsigned long t {1}; t < y*p; ++t) {
 		eps = normalDist(dre);
 		*++tIt = static_cast<double>(t)*dt;
-		latestPrice = pricesObj.advance(latestPrice, mu, dt, sigma, eps);
+		latestPrice = advance(latestPrice, mu, dt, sigma, eps);
 		*++pIt = latestPrice;
 	}
 }
 
-
-map<string, double> scan_arguments(int narg, char* args[])
+Prices::Prices(PricesParam param, Integration type) :
+		pp {param},
+		times (pp.get_years()*pp.get_periods()),
+		prices (pp.get_years()*pp.get_periods()),
+		advance {integrationType[type]}
 {
-	string argumentsLine;
+	prices[0] = param.get_s0();
+}
+
+
+std::map<std::string, double> scan_arguments(int narg, char* args[])
+{
+	std::string argumentsLine;
 	for (int i {1}; i < narg; ++i)
 		argumentsLine += args[i];
 
@@ -221,24 +105,24 @@ map<string, double> scan_arguments(int narg, char* args[])
 	constexpr double	sigma {0.3};
 
 	// pattern for the flags
-	string tString {R"(-T\s*(\d+))"};	// accepts only ints
-	string sString {R"(-S\s*(\d+(\.\d+)?))"};
-	string pString {R"(-p\s*(\d+))"};	// accepts only ints
-	string muString {R"(-m\s*(\d+(\.\d+)?))"};
-	string sigmaString {R"(-s\s*(\d+(\.\d+)?))"};
+	std::string tString {R"(-T\s*(\d+))"};	// accepts only ints
+	std::string sString {R"(-S\s*(\d+(\.\d+)?))"};
+	std::string pString {R"(-p\s*(\d+))"};	// accepts only ints
+	std::string muString {R"(-m\s*(\d+(\.\d+)?))"};
+	std::string sigmaString {R"(-s\s*(\d+(\.\d+)?))"};
 
-	vector<pair <string, double>> matches {
+	std::vector<std::pair <std::string, double>> matches {
 		{tString, T}, {sString, S}, {pString, p},
 		{muString, mu}, {sigmaString, sigma}
 	};
 
-	smatch m;
+	std::smatch m;
 	for (auto& pat : matches) {
-		if (regex_search(argumentsLine, m, regex(pat.first)))
+		if (regex_search(argumentsLine, m, std::regex(pat.first)))
 			pat.second = stod(m[1]);
 	}
 
-	map<string, double> params;
+	std::map<std::string, double> params;
 	params["T"] = {matches[0].second};
 	params["S"] = {matches[1].second};
 	params["p"] = {matches[2].second};
@@ -252,7 +136,7 @@ map<string, double> scan_arguments(int narg, char* args[])
 
 int main(int argc, char* argv[])
 {
-	map<string, double> parameters {scan_arguments(argc, argv)};
+	std::map<std::string, double> parameters {scan_arguments(argc, argv)};
 
 	double mu {parameters["mu"]};
 	double sigma {parameters["sigma"]};
@@ -264,14 +148,14 @@ int main(int argc, char* argv[])
 	PricesParam pp {s0, static_cast<unsigned long>(years),
 					static_cast<unsigned>(periods), gbm};
 
-	LinearPrices	LP {pp};
-	LogPrices	LogP {pp};
+	Prices	LP      {pp, Integration::Linear};
+	Prices	LogP    {pp, Integration::Logarithmic};
 
-	unsigned long seed {random_device{"/dev/random"}()};
-	generate_prices(LP, seed);
-	generate_prices(LogP, seed);
+	unsigned long seed {std::random_device{"/dev/random"}()};
+	LP.generate_prices(seed);
+	LogP.generate_prices(seed);
 
-	ofstream ofs {"linprices"};
+	std::ofstream ofs {"linprices"};
 	ofs << LP;
 	ofs.close();
 	ofs.open("logprices");
@@ -281,18 +165,17 @@ int main(int argc, char* argv[])
 	double totFinalLin {0};
 	double totFinalLog {0};
 	for (unsigned n{0}; n < numberOfTries; ++n) {
-		LinearPrices lp {pp};
-		LogPrices  logp {pp};
-		//seed = random_device{"/dev/random"}();
-		generate_prices(lp, seed);
-		generate_prices(logp, seed);
+		Prices lp   {pp, Integration::Linear};
+		Prices logp {pp, Integration::Logarithmic};
+		lp.generate_prices(seed);
+		logp.generate_prices(seed);
 		totFinalLin += lp.final_price();
 		totFinalLog += logp.final_price();
 	}
-	cout << "Final Price Average: "
-		<< log(totFinalLin/numberOfTries) << endl;
-	cout << "Final LogPrice Aver: "
-		<< totFinalLog/numberOfTries << endl;
+	std::cout << "Final Price Average: "
+		<< log(totFinalLin/numberOfTries) << '\n';
+	std::cout << "Final LogPrice Aver: "
+		<< totFinalLog/numberOfTries << '\n';
 
 	return 0;
 }
