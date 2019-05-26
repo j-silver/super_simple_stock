@@ -66,64 +66,90 @@ public:
 
 
 class Prices {
-protected:
-	PricesParam pp;
-	valarray<double> times;
-	valarray<double> prices;
-
 public:
-	// constructor
-	explicit Prices(PricesParam& ps) :
-		pp {ps}, times (pp.get_years()*pp.get_periods()),
-		prices (pp.get_years()*pp.get_periods()) {};
+	virtual pair<valarray<double>, valarray<double>> ts_seq() const = 0;
 
-	const pair<valarray<double>, valarray<double>> TS_seq() const
-		{ return {times, prices}; }
+	virtual PricesParam const& get_params() const = 0;
 
 	virtual double advance
 		(double lP, double m, double d, double s, double e) = 0;
-	virtual void generate_prices(long);
-	double final_price() const
-	{
-		return *prev(end(prices));
-	}
+
+protected:
+	virtual double* get_times_start() = 0;
+	virtual double* get_prices_start() = 0;
+
+public:
+	friend void generate_prices(Prices& pricesObj, unsigned long);
+
+	virtual double final_price() const = 0;
 
 	virtual ~Prices() = default;
 };
 
 
-ostream& operator<<(ostream& os, const Prices& P)
+ostream& operator<<(ostream& os, const Prices& p)
 {
-	for (unsigned i {0}; i<P.TS_seq().first.size(); ++i)
-		os << P.TS_seq().first[i] << "," << P.TS_seq().second[i]
+	for (unsigned i {0}; i< p.ts_seq().first.size(); ++i)
+		os << p.ts_seq().first[i] << "," << p.ts_seq().second[i]
 			<< endl;
 	return os;
 }
 
 
 class LinearPrices : public Prices {
+	PricesParam pp;
+	valarray<double> times;
+	valarray<double> prices;
 public:
 	// constructor
-	explicit LinearPrices(PricesParam PP) : Prices(PP)
+	explicit LinearPrices(PricesParam param) :
+		pp {param},
+		times (pp.get_years()*pp.get_periods()),
+		prices (pp.get_years()*pp.get_periods())
 	{
-		times[0] = 0;
-		prices[0] = PP.get_s0();
+		prices[0] = param.get_s0();
 	};
 
-	double advance(double l_p, double m, double D, double s, double e) final
+	double advance(double lP, double m, double d, double s, double e) final
 	{
-		l_p *= (1 + m*D + s*e*sqrt(D));
-		return l_p;
+		lP *= (1 + m*d + s*e*sqrt(d));
+		return lP;
 	};
+
+	pair<valarray<double>, valarray<double>> ts_seq() const override
+	{
+		return {times, prices};
+	}
+
+protected:
+	double* get_times_start() override { return &times[0]; }
+	double* get_prices_start() override { return &prices[0]; }
+
+public:
+	PricesParam const& get_params() const override
+	{
+		return pp;
+	}
+
+	double final_price() const override
+	{
+		return *prev(end(prices));
+	}
+
 };
 
 
 class LogPrices : public Prices {
+	PricesParam pp;
+	valarray<double> times;
+	valarray<double> prices;
 public:
 	// constructor
-	explicit LogPrices(PricesParam pp) : Prices(pp)
+	explicit LogPrices(PricesParam pp) :
+		pp {pp},
+		times (pp.get_years()*pp.get_periods()),
+		prices (pp.get_years()*pp.get_periods())
 	{
-		times[0] = 0;
 		prices[0] = log(pp.get_s0());
 	};
 
@@ -133,11 +159,32 @@ public:
 		lP += (nu*d + s*e*sqrt(d));
 		return lP;
 	};
+
+protected:
+	double* get_times_start() override { return &times[0]; }
+	double* get_prices_start() override { return &prices[0]; }
+
+public:
+	pair<valarray<double>, valarray<double>> ts_seq() const override
+	{
+		return {times, prices};
+	}
+
+	PricesParam const& get_params() const override
+	{
+		return pp;
+	}
+
+	double final_price() const override
+	{
+		return *prev(end(prices));
+	}
 };
 
 
-void Prices::generate_prices(long seed)
+void generate_prices(Prices& pricesObj, unsigned long seed)
 {
+	auto pp {pricesObj.get_params()};
 	unsigned p {pp.get_periods()};
 	double dt {1.0/p};
 	unsigned long y {pp.get_years()};
@@ -148,13 +195,13 @@ void Prices::generate_prices(long seed)
 	normal_distribution<> normalDist;
 	default_random_engine dre {seed};
 
-	auto tIt {begin(times)};
-	auto pIt {begin(prices)};
+	auto tIt {pricesObj.get_times_start()};
+	auto pIt {pricesObj.get_prices_start()};
 	double latestPrice {*pIt};
-	for (unsigned t{1}; t < y*p; ++t) {
+	for (unsigned long t {1}; t < y*p; ++t) {
 		eps = normalDist(dre);
-		*++tIt = t*dt;
-		latestPrice = advance(latestPrice, mu, dt, sigma, eps);
+		*++tIt = static_cast<double>(t)*dt;
+		latestPrice = pricesObj.advance(latestPrice, mu, dt, sigma, eps);
 		*++pIt = latestPrice;
 	}
 }
@@ -163,7 +210,7 @@ void Prices::generate_prices(long seed)
 map<string, double> scan_arguments(int narg, char* args[])
 {
 	string argumentsLine;
-	for (int i{1}; i<narg; ++i)
+	for (int i {1}; i < narg; ++i)
 		argumentsLine += args[i];
 
 	// default values
@@ -220,9 +267,9 @@ int main(int argc, char* argv[])
 	LinearPrices	LP {pp};
 	LogPrices	LogP {pp};
 
-	long seed {time(nullptr)};
-	LP.generate_prices(seed);
-	LogP.generate_prices(seed);
+	unsigned long seed {random_device{"/dev/random"}()};
+	generate_prices(LP, seed);
+	generate_prices(LogP, seed);
 
 	ofstream ofs {"linprices"};
 	ofs << LP;
@@ -236,9 +283,9 @@ int main(int argc, char* argv[])
 	for (unsigned n{0}; n < numberOfTries; ++n) {
 		LinearPrices lp {pp};
 		LogPrices  logp {pp};
-		seed = time(nullptr);
-		lp.generate_prices(seed);
-		logp.generate_prices(seed);
+		//seed = random_device{"/dev/random"}();
+		generate_prices(lp, seed);
+		generate_prices(logp, seed);
 		totFinalLin += lp.final_price();
 		totFinalLog += logp.final_price();
 	}
