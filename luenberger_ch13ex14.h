@@ -1,7 +1,3 @@
-//
-// Created by giuseppe on 26/05/19.
-//
-
 #ifndef LUENBERGER_CH13EX14_H
 #define LUENBERGER_CH13EX14_H
 
@@ -19,12 +15,6 @@ using oneStepAdvance = double (*)(double lP, double m, double d, double s, doubl
 
 double linear_advance(double lP, double m, double d, double s, double e);
 double logarithmic_advance(double lP, double m, double d, double s, double e);
-
-
-std::map<Integration, oneStepAdvance> integrationType {
-		{Integration::Linear, linear_advance},
-		{Integration::Logarithmic, logarithmic_advance}
-};
 
 
 class GeomBrownMotion {
@@ -83,5 +73,7 @@ public:
 	}
 };
 
+
+std::ostream& operator<<(std::ostream& os, const Prices& p);
 
 #endif // LUENBERGER_CH13EX14_H
