@@ -125,8 +125,8 @@ void random_prices()
 void bad_data_test()
 {
 	std::cout << "Inserting non-valid data\n";
-	std::cout << "//        stock\t\tprice\tlast div\tfix div\tparval\tcommon?\n";
-	std::cout << "Stock S1 {\"ABC\",\t0,\t0,\t\t0,\t100,\ttrue}\n";
+	std::cout << "//        stock  price  last div  fix div  parval  common?\n";
+	std::cout << "Stock S1 {\"ABC\", 0,     0,        0,       100,    true}\n";
 	try {
 		//        stock  price	last div	fix div   	parval	common?  
 		Stock S1 {"ABC", 0,		0,			0,			100,  	true};
@@ -134,8 +134,8 @@ void bad_data_test()
 	catch (std::exception& e) {
 		std::cout << "Exception thrown: " << e.what() << "\n\n";
 	}
-	std::cout << "//        stock\t\tprice\tlast div\tfix div\tparval\tcommon?\n";
-	std::cout << "Stock S2 {\"DEF\",\t10,\t0,\t\t0,\t100,\tfalse}\n";
+	std::cout << "//        stock  price  last div  fix div  parval  common?\n";
+	std::cout << "Stock S2 {\"DEF\", 10,    0,        0,       100,    false}\n";
 	try {
 		//        stock  price	last div	fix div   	parval	common?  
 		Stock S2 {"DEF", 10,		0,			0,			100,  	false};
@@ -143,8 +143,8 @@ void bad_data_test()
 	catch (std::exception& e) {
 		std::cout << "Exception thrown: " << e.what() << "\n\n";
 	}
-	std::cout << "//        stock\t\tprice\tlast div\tfix div\tparval\tcommon?\n";
-	std::cout << "Stock S3 {\"ABC\",\t10,\t0,\t\t0,\t100,\ttrue}\n";
+	std::cout << "//        stock  price  last div  fix div  parval  common?\n";
+	std::cout << "Stock S3 {\"ABC\", 10,    0,        0,       100,    true}\n";
 	std::cout << "P/E Ratio : ";
 	try {
 		//        stock  price	last div	fix div   	parval	common?  

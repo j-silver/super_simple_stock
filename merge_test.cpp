@@ -11,7 +11,7 @@
 TEST(Merge, RandomArray)
 {
 	std::random_device randomDevice {"/dev/random"};
-	std::uniform_int_distribution distribution;
+	std::uniform_int_distribution<int> distribution;
 	std::mt19937_64 generator {randomDevice()};
 	std::vector<int> a1(100);
 	std::vector<int> a2(100);
