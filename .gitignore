@@ -9,6 +9,7 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
+*~
 ### C++ template
 # Prerequisites
 *.d
@@ -44,7 +45,7 @@ CTestTestfile.cmake
 *.app
 
 .idea/
-cmake-build-debug/JPMorgan_Chase_test
-cmake-build-debug/JPMorgan_Chase_test.cbp
-Super_Simple_stock.hpp~
-cmake-build-release/JPMorgan_Chase_test.cbp
+cmake-build-debug/*
+cmake-build-release/*
+cmake-build-minsizerel/*
+cmake-build-relwithdebinfo/*
