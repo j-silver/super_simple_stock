@@ -10,12 +10,12 @@
 using Clock = std::chrono::high_resolution_clock;
 
 class Stock {
-	std::string Equity;
-	unsigned price;
-	unsigned last_dividend;
-	double fix_dividend;	// It's a percentage
-	unsigned par_value;
-	bool common;
+	std::string _equity;
+	unsigned _price;
+	unsigned _lastDividend;
+	double _fixDividend;	// It's a percentage
+	unsigned _parValue;
+	bool _common;
 public:
 	Stock(std::string eq,
 		  unsigned pr,
@@ -24,33 +24,33 @@ public:
 		  unsigned pv = 0,
 		  bool c = true);
 
-	std::string get_equity() const { return Equity; }
-	unsigned get_price() const { return price; }
-	unsigned get_last_dividend() const { return last_dividend; }
-	double get_fix_div() const { return fix_dividend; }
-	bool is_common() const { return common; }
-	unsigned get_par_value() const { return par_value; }
+	[[nodiscard]] std::string get_equity() const { return _equity; }
+	[[nodiscard]] unsigned get_price() const { return _price; }
+	[[nodiscard]] unsigned get_last_dividend() const { return _lastDividend; }
+	[[nodiscard]] double get_fix_div() const { return _fixDividend; }
+	[[nodiscard]] bool is_common() const { return _common; }
+	[[nodiscard]] unsigned get_par_value() const { return _parValue; }
 
-	double dividend_yield() const;
-	double pe_ratio() const;
+	[[nodiscard]] double dividend_yield() const;
+	[[nodiscard]] double pe_ratio() const;
 };
 
-
-enum class type {buy, sell};
+enum class Type {Buy, Sell};
 
 class Trade {
-	Stock stock;
-	std::chrono::time_point<Clock> timestamp;
-	unsigned quantity;
-	type t;
-	unsigned trade_price;
+
+    Stock _stock;
+	std::chrono::time_point<Clock> _timestamp;
+	unsigned _quantity;
+	Type _t;
+	unsigned _tradePrice;
 public:
 	Trade(const Stock& s,
-		  const std::chrono::time_point<Clock>& ts,
-		  unsigned q,
-		  type T,
-		  unsigned p)
-		: stock {s}, timestamp {ts}, quantity {q}, t {T}, trade_price {p}
+          const std::chrono::time_point<Clock>& ts,
+          unsigned q,
+          Type t,
+          unsigned p)
+		: _stock {s}, _timestamp {ts}, _quantity {q}, _t {t}, _tradePrice {p}
 	{
 		// basic check
 		if (p == 0)
@@ -59,16 +59,16 @@ public:
 			throw std::domain_error("Stock's name empty.");
 	}
 
-	std::string get_stock_name() const { return stock.get_equity(); }
-	unsigned get_price() const { return trade_price; }
-	unsigned get_quantity() const { return quantity; }
-	type get_type() const { return t; }
-	std::chrono::time_point<Clock> get_timestamp() const { return timestamp; }
+	[[nodiscard]] std::string get_stock_name() const { return _stock.get_equity(); }
+	[[nodiscard]] unsigned get_price() const { return _tradePrice; }
+	[[nodiscard]] unsigned get_quantity() const { return _quantity; }
+	[[nodiscard]] Type get_type() const { return _t; }
+	[[nodiscard]] std::chrono::time_point<Clock> get_timestamp() const { return _timestamp; }
 };
 
 
 double
-volume_weighted_stock_price(const std::vector<std::pair<double, unsigned>>& trades);
+volume_weighted_stock_price(const std::vector<std::pair<double, unsigned>>& t);
 
 // overload with a vector of trades as argument
 double
@@ -80,8 +80,8 @@ template<typename... Prices>
 constexpr double geometric_mean(Prices... prices)
 {
 	double n {sizeof...(prices)};
-	double geom_mean {(std::pow(prices, 1.0/n)* ...)}; // fold expr: requires C++17
-	return geom_mean;
+	double geomMean {(std::pow(prices, 1.0 / n)* ...)}; // fold expr: requires C++17
+	return geomMean;
 }
 
 

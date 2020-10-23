@@ -6,33 +6,33 @@
 
 double Stock::dividend_yield() const
 {
-	double div_yld {0.0};
-	if (common)    // use the common formula
-		div_yld = static_cast<double>(last_dividend)/static_cast<double>(price);
+	double divYld;
+	if (_common)    // use the common formula
+		divYld = static_cast<double>(_lastDividend) / static_cast<double>(_price);
 	else // use the preferred formula
-		div_yld = fix_dividend/
-		          100.0*
-		          static_cast<double>(par_value)/
-		          static_cast<double>(price);
+		divYld = _fixDividend /
+                 100.0 *
+                 static_cast<double>(_parValue) /
+                 static_cast<double>(_price);
 
-	return 100.0*div_yld; // It's a percentage
+	return 100.0 * divYld; // It's a percentage
 }
 
 
 double Stock::pe_ratio() const
 {
-	double pe {0.0};
+	double pe;
 
-	if (common) {
-		if (last_dividend == 0)
+	if (_common) {
+		if (_lastDividend == 0)
 			throw std::domain_error("Can't calculate P/E: dividend is zero");
 		else
-			pe = static_cast<double>(price)/static_cast<double>(last_dividend);
+			pe = static_cast<double>(_price) / static_cast<double>(_lastDividend);
 	} else {
-		if (fix_dividend == 0)
+		if (_fixDividend == 0)
 			throw std::domain_error("Can't calculate P/E: fixed dividend is zero");
 		else
-			pe = static_cast<double>(price)/fix_dividend;
+			pe = static_cast<double>(_price) / _fixDividend;
 	}
 
 	return pe;
@@ -40,11 +40,11 @@ double Stock::pe_ratio() const
 
 Stock::Stock(std::string eq, unsigned pr, unsigned int ld, double fd,
              unsigned int pv, bool c)
-		: Equity {std::move(eq)}, price {pr}, last_dividend {ld},
-		  fix_dividend {fd}, par_value {pv}, common {c}
+		: _equity {std::move(eq)}, _price {pr}, _lastDividend {ld},
+          _fixDividend {fd}, _parValue {pv}, _common {c}
 {
 	if (pr == 0 || (!c && pv == 0) || (!c && fd <= 0))
-		throw std::domain_error("Invalid price or dividend or par_value");
+		throw std::domain_error("Invalid price or dividend or parValue");
 }
 
 
@@ -55,7 +55,7 @@ double geometric_mean(const std::vector<double>& prices)
 		throw std::domain_error("Invalid prices");
 
 	double n {static_cast<double>(prices.size())};
-	double geom_mean {
+	double geomMean {
 			std::accumulate(prices.cbegin(),
 			                prices.cend(),
 			                1.0,
@@ -64,7 +64,7 @@ double geometric_mean(const std::vector<double>& prices)
 								return p1 *= std::pow(p, 1.0/N);
 			                })
 	};
-	return geom_mean;
+	return geomMean;
 }
 
 
@@ -72,31 +72,31 @@ double geometric_mean(const std::vector<double>& prices)
 double
 volume_weighted_stock_price(const std::vector<std::pair<double, unsigned>>& trades)
 {
-	unsigned total_quantity {
+	unsigned totalQuantity {
 			std::accumulate(trades.cbegin(),
 			                trades.cend(),
 			                unsigned {0},
-			                [](unsigned T, const auto& price_quantity)
+			                [](unsigned t, const auto& priceQuantity)
 			                {
-								return T += price_quantity.second;
+								return t += priceQuantity.second;
 			                })
 	};
 
-	if (total_quantity <= 0)
+	if (totalQuantity <= 0)
 		throw std::domain_error("Total traded quantity must be positive");
 
 	double numerator {
 			std::accumulate(trades.cbegin(),
 			                trades.cend(),
 			                0.0,
-			                [](double T, const auto& price_quantity)
+			                [](double T, const auto& priceQuantity)
 			                {
-				                return T += static_cast<double>(price_quantity.first)*
-				                            static_cast<double>(price_quantity.second);
+				                return T += static_cast<double>(priceQuantity.first) *
+                                            static_cast<double>(priceQuantity.second);
 			                })
 	};
 
-	return numerator/total_quantity;
+	return numerator / totalQuantity;
 }
 
 
@@ -104,16 +104,16 @@ volume_weighted_stock_price(const std::vector<std::pair<double, unsigned>>& trad
 double volume_weighted_stock_price(const std::vector<Trade>& trades)
 {
 	auto now {Clock::now()};
-	std::chrono::minutes last_15min {15};
+	std::chrono::minutes last15Min {15};
 
-	std::vector<std::pair<double, unsigned>> last_trades;
+	std::vector<std::pair<double, unsigned>> lastTrades;
 	for (const auto& t : trades)
-		if (now - t.get_timestamp() < last_15min)
-			last_trades.emplace_back(t.get_price(), t.get_quantity());
+		if (now - t.get_timestamp() < last15Min)
+			lastTrades.emplace_back(t.get_price(), t.get_quantity());
 
-	double vol_wght_stk_prc {volume_weighted_stock_price(last_trades)};
+	double volWghtStkPrc {volume_weighted_stock_price(lastTrades)};
 
-	return vol_wght_stk_prc;
+	return volWghtStkPrc;
 }
 
 
@@ -127,14 +127,15 @@ std::ostream& operator<<(std::ostream& os, const std::vector<Trade>& trades)
 	os << std::setfill(' ');
 
 	for (const auto& t : trades) {
-		auto trade_timestamp {Clock::to_time_t(t.get_timestamp())};
-		std::string time {(ctime(&trade_timestamp))};
-		time.pop_back(); // remove the lf
+		auto tradeTimestamp {Clock::to_time_t(t.get_timestamp())};
+		std::string timestamp {(ctime(&tradeTimestamp))};
+		timestamp.pop_back(); // remove the lf
+		std::string time;
 		if (Clock::now() - t.get_timestamp() < std::chrono::minutes {15})
-			time = "*" + time;
+			time = "*" + timestamp;
 		else
-			time = " " + time;
-		auto type(t.get_type() == type::buy ?
+			time = " " + timestamp;
+		auto type(t.get_type() == Type::Buy ?
 		          std::string {"Buy"} :
 		          std::string {"Sell"});
 
@@ -147,10 +148,10 @@ std::ostream& operator<<(std::ostream& os, const std::vector<Trade>& trades)
 
 	os << std::left;
 
-	auto VOL_WGHT {volume_weighted_stock_price(trades)};
+	auto volWght {volume_weighted_stock_price(trades)};
 	os << std::string(62, '-') << std::endl;
 	os << "Volume Weighted Stock Price (*last 15 minutes): "
-	   << VOL_WGHT << std::endl;
+       << volWght << std::endl;
 
 	return os;
 }

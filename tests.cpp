@@ -28,16 +28,16 @@ void simple_test()
 	Stock S5 {"JKL", 23,	13,			0,			250,  	true};
 
 	//		  stock	timestamp		quantity	buy/sell	price
-	Trade T1 {S1,	Clock::now(),	121,		type::buy,	S1.get_price()};
-	Trade T2 {S2,	Clock::now(),	12,			type::sell, S2.get_price()};
-	Trade T3 {S3,	Clock::now(),	17,			type::sell, S3.get_price()};
+	Trade T1 {S1, Clock::now(), 121, Type::Buy, S1.get_price()};
+	Trade T2 {S2, Clock::now(), 12, Type::Sell, S2.get_price()};
+	Trade T3 {S3, Clock::now(), 17, Type::Sell, S3.get_price()};
 
 	auto a_long_ago {Clock::now() - std::chrono::minutes{200}};
 	// the following trades won't be counted because they happened 200 min ago
 
 	//		  stock	timestamp		quantity	buy/sell	price
-	Trade T4 {S4,	a_long_ago,		30000,		type::sell, S4.get_price()};
-	Trade T5 {S5,	a_long_ago,		300,		type::sell, S5.get_price()};
+	Trade T4 {S4, a_long_ago, 30000, Type::Sell, S4.get_price()};
+	Trade T5 {S5, a_long_ago, 300, Type::Sell, S5.get_price()};
 
 	std::vector<Stock> stocks {S1, S2, S3, S4, S5};
 	std::vector<Trade> trades {T1, T2, T3, T4, T5};
@@ -113,7 +113,7 @@ void random_prices()
 	for (const auto& s : stocks) {
 		auto timestamp {Clock::now()-std::chrono::minutes{minutes_ago(engine)}};
 		auto q {quantity(engine)};
-		auto t = type(engine) == 0 ? type::buy : type::sell;
+		auto t = type(engine) == 0 ? Type::Buy : Type::Sell;
 		trades.emplace_back(s, timestamp, q, t, s.get_price());
 	}
 
